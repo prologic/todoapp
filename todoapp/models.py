@@ -27,7 +27,7 @@ class TodoItem(Model):
     title = Attribute(required=True)
     done = BooleanField(default=False)
 
-    def mark_donw(self):
+    def mark_done(self):
         self.done = True
         self.save()
 

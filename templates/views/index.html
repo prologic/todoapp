@@ -3,10 +3,21 @@
 {% set title = "Home" -%}
 
 {% block body %}
-  <ul>
-    {% for entry in entries %}
-      <li>{{ entry.title }}</li>
-    {% endfor %}
-  </ul>
+  {% if entries %}
+    <form action="{{ uri('/update/done')}}" method="POST">
+      <ul>
+        {% for entry in entries %}
+          <li>
+            {{ entry.title }}
+            <button type="submit" name="id" value={{ entry.id }}>
+              Done
+            </button>
+          </li>
+        {% endfor %}
+      </ul>
+    </form>
+  {% else %}
+    <o><i>Nothing to do...</i></p>
+  {% endif %}
   <a href="/add">Add</a>
 {% endblock %}

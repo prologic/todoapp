@@ -19,13 +19,17 @@ from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 from redisco import connection_setup, get_client
 
 
-from models import TodoList
+from models import TodoItem, TodoList
 
 
 DEFAULTS = {
     "appname": "todoapp",
     "version": "dev",
 }
+
+
+class refresh(Event):
+    """refresh Event"""
 
 
 class render(Event):
@@ -79,7 +83,7 @@ class JinjaRenderer(Component):
 class Root(Controller):
 
     def GET(self, *args, **kwargs):
-        entries = self.parent.todo.entries
+        entries = [entry for entry in self.parent.todo.entries if not entry.done]
         return JinjaTemplate("views/index", entries=entries)
 
 
@@ -92,6 +96,18 @@ class Add(Controller):
 
     def POST(self, *args, **kwargs):
         self.parent.todo.add_entry(kwargs["title"])
+        return self.redirect(self.uri("/"))
+
+
+class Update(Controller):
+
+    channel = "/update"
+
+    def done(self, *args, **kwargs):
+        id = int(kwargs["id"])
+        item = TodoItem.objects.get_by_id(id)
+        item.mark_done()
+        self.fire(refresh())
         return self.redirect(self.uri("/"))
 
 
@@ -128,8 +144,6 @@ def setup_database():
 
 class TodoApp(Component):
 
-    channel = "web"
-
     def init(self, db):
         self.db = db
 
@@ -140,6 +154,11 @@ class TodoApp(Component):
 
         Root().register(self)
         Add().register(self)
+        Update().register(self)
+
+    def refresh(self):
+        print("Reloading todo list ...")
+        self.todo = TodoList.objects.get_or_create(name="TODO")
 
 
 def main():
