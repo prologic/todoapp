@@ -1,0 +1,9 @@
+redis:
+    image: redis
+
+todoapp:
+    build: .
+    links:
+        - redis
+    environment:
+        - VIRTUALHOST=todoapp.vz1.bne.shortcircuit.net.au
