@@ -3,5 +3,10 @@
 {% set title = "Home" -%}
 
 {% block body %}
+  <ul>
+    {% for entry in entries %}
+      <li>{{ entry.title }}</li>
+    {% endfor %}
+  </ul>
   <a href="/add">Add</a>
 {% endblock %}

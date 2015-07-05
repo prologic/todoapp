@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from setuptools import setup
+from setuptools import find_packages, setup
 
 
 def parse_requirements(filename):
@@ -13,8 +13,11 @@ def parse_requirements(filename):
 setup(
     name="todoapp",
     version="dev",
-    scripts=(
-        "todoapp",
-    ),
+    packages=find_packages(),
+    entry_points={
+        "console_scripts": [
+            "todoapp=todoapp.main:main",
+        ]
+    },
     install_requires=list(parse_requirements("requirements.txt")),
 )

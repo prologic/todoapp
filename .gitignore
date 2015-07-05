@@ -2,3 +2,4 @@
 .env
 *.bak
 *.py[co]
+*.egg-info

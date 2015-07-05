@@ -1,10 +1,12 @@
-#!/usr/bin/env python
-
-
 from __future__ import print_function
 
+import os
 import sys
+from time import sleep
+from os import environ
+from socket import socket
 from traceback import format_tb
+from socket import AF_INET, SOCK_STREAM
 
 
 from circuits.web.errors import httperror
@@ -13,6 +15,11 @@ from circuits.web.exceptions import NotFound
 from circuits import handler, Event, Component
 
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
+
+from redisco import connection_setup, get_client
+
+
+from models import TodoList
 
 
 DEFAULTS = {
@@ -27,9 +34,9 @@ class render(Event):
 
 class JinjaTemplate(object):
 
-    def __init__(self, name, context=None):
+    def __init__(self, name, **context):
         self.name = name
-        self.context = context or {}
+        self.context = context
 
 
 class JinjaRenderer(Component):
@@ -72,7 +79,8 @@ class JinjaRenderer(Component):
 class Root(Controller):
 
     def GET(self, *args, **kwargs):
-        return JinjaTemplate("views/index")
+        entries = self.parent.todo.entries
+        return JinjaTemplate("views/index", entries=entries)
 
 
 class Add(Controller):
@@ -83,13 +91,64 @@ class Add(Controller):
         return JinjaTemplate("views/add")
 
     def POST(self, *args, **kwargs):
+        self.parent.todo.add_entry(kwargs["title"])
         return self.redirect(self.uri("/"))
 
 
-app = Server(("0.0.0.0", 8000))
+def waitfor(host, port, timeout=10):
+    sock = socket(AF_INET, SOCK_STREAM)
 
-Root().register(app)
-Add().register(app)
-JinjaRenderer("templates", defaults=DEFAULTS).register(app)
+    while sock.connect_ex((host, port)) != 0 and timeout:
+        timeout -= 1
+        sleep(1)
 
-app.run()
+    if timeout <= 0:
+        print("Timed out waiting for {0:s}:{1:d}".format(host, port))
+        raise SystemExit(1)
+
+
+def setup_database():
+    dbhost = environ.get("REDIS_PORT_6379_TCP_ADDR", "localhost")
+    dbport = int(environ.get("REDIS_PORT_6379_TCP_PORT", "6379"))
+
+    print("Waiting for Redis Service on {0:s}:{1:d} ...".format(dbhost, dbport))
+
+    waitfor(dbhost, dbport)
+
+    print("Connecting to Redis on {0:s}:{1:d} ...".format(dbhost, dbport))
+
+    connection_setup(host=dbhost, port=dbport)
+
+    print("Success!")
+
+    db = get_client()
+
+    return db
+
+
+class TodoApp(Component):
+
+    channel = "web"
+
+    def init(self, db):
+        self.db = db
+
+        self.todo = TodoList.objects.get_or_create(name="TODO")
+
+        Server(("0.0.0.0", 8000)).register(self)
+        JinjaRenderer("templates", defaults=DEFAULTS).register(self)
+
+        Root().register(self)
+        Add().register(self)
+
+
+def main():
+    sys.stdout = os.fdopen(sys.stdout.fileno(), "w", 0)
+
+    db = setup_database()
+
+    TodoApp(db).run()
+
+
+if __name__ == "__main__":
+    main()
