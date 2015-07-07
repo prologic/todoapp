@@ -8,10 +8,8 @@
       <ul>
         {% for entry in entries %}
           <li>
+            <button type="submit" name="id" value={{ entry.id }}>&#10004;</button>
             {{ entry.title }}
-            <button type="submit" name="id" value={{ entry.id }}>
-              Done
-            </button>
           </li>
         {% endfor %}
       </ul>
@@ -19,5 +17,5 @@
   {% else %}
     <o><i>Nothing to do...</i></p>
   {% endif %}
-  <a href="/add">Add</a>
+  <a href="{{ uri('/add/{0}'.format(name)) }}">Add</a>
 {% endblock %}

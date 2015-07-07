@@ -28,19 +28,19 @@ DEFAULTS = {
 }
 
 
-class refresh(Event):
-    """refresh Event"""
-
-
 class render(Event):
     """render Event"""
 
 
 class JinjaTemplate(object):
 
-    def __init__(self, name, **context):
-        self.name = name
+    def __init__(self, _name, **context):
+        self._name = _name
         self.context = context
+
+    @property
+    def name(self):
+        return self._name
 
 
 class JinjaRenderer(Component):
@@ -83,8 +83,10 @@ class JinjaRenderer(Component):
 class Root(Controller):
 
     def GET(self, *args, **kwargs):
-        entries = [entry for entry in self.parent.todo.entries if not entry.done]
-        return JinjaTemplate("views/index", entries=entries)
+        name = (args and args[0]) or "TODO"
+        todo = TodoList.objects.get_or_create(name=name)
+        entries = [entry for entry in todo.entries if not entry.done]
+        return JinjaTemplate("views/index", name=name, entries=entries)
 
 
 class Add(Controller):
@@ -95,7 +97,9 @@ class Add(Controller):
         return JinjaTemplate("views/add")
 
     def POST(self, *args, **kwargs):
-        self.parent.todo.add_entry(kwargs["title"])
+        name = (args and args[0]) or "TODO"
+        todo = TodoList.objects.get_or_create(name=name)
+        todo.add_entry(kwargs["title"])
         return self.redirect(self.uri("/"))
 
 
@@ -107,7 +111,6 @@ class Update(Controller):
         id = int(kwargs["id"])
         item = TodoItem.objects.get_by_id(id)
         item.mark_done()
-        self.fire(refresh())
         return self.redirect(self.uri("/"))
 
 
@@ -147,8 +150,6 @@ class TodoApp(Component):
     def init(self, db):
         self.db = db
 
-        self.todo = TodoList.objects.get_or_create(name="TODO")
-
         Server(("0.0.0.0", 8000)).register(self)
         JinjaRenderer("templates", defaults=DEFAULTS).register(self)
 
@@ -156,9 +157,9 @@ class TodoApp(Component):
         Add().register(self)
         Update().register(self)
 
-    def refresh(self):
-        print("Reloading todo list ...")
-        self.todo = TodoList.objects.get_or_create(name="TODO")
+    def stopped(self, *args):
+        print("Shutting down...")
+        self.db.save()
 
 
 def main():
