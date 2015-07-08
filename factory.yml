@@ -1,0 +1,9 @@
+machines:
+  $include: "machines.yml"
+
+domains:
+  $include: "domains.yml"
+
+services:
+  $include: "services.yml"
+  $include: "app.yml"

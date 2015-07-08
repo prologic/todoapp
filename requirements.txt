@@ -1,7 +1,20 @@
-redisco
 redis
 jinja2
+redisco
 
 # circuits
 # Development version of circuits
 -e git+https://github.com/circuits/circuits.git#egg=circuits
+
+# factory
+# Development version of factory
+-e git+https://github.com/prologic/factory.git#egg=factory
+
+# domains
+# Development version of domains
+-e git+https://github.com/prologic/domains.git#egg=domains
+
+# docker-compose
+# XXX: See: https://github.com/docker/compose/issues/890
+docker-compose
+requests[security]

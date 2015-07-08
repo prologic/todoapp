@@ -1,0 +1,7 @@
+todoapp.org:
+  provider: digitalocean
+  records:
+    - class: "IN"
+      type: "A"
+      name: "@"
+      value: {{ machines.prod.ip }}

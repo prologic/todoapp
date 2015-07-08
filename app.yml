@@ -1,0 +1,10 @@
+redis:
+  image: redis
+
+todoapp:
+  build: .
+  links:
+    - redis
+  environment:
+    - PORT=8000
+    - VIRTUALHOST=todoapp.vz1.bne.shortcircuit.net.au
